@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+
+.env
+.venv/
+venv/
+
+videos_temporaires/*
+!videos_temporaires/.gitkeep
+
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+.DS_Store
+Thumbs.db
