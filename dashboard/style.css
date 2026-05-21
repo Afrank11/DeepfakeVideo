@@ -1,0 +1,81 @@
+/* Configuration de base */
+:root {
+    --bg-color: #0f172a;      /* Bleu très foncé */
+    --card-bg: #1e293b;       /* Gris-bleu pour les cartes */
+    --accent-color: #38bdf8;  /* Bleu clair pour l'action */
+    --text-main: #f8fafc;     /* Blanc cassé */
+    --text-dim: #94a3b8;      /* Gris pour les textes secondaires */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 900px;
+}
+
+header h1 {
+    text-align: center;
+    color: var(--accent-color);
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Style de la zone d'envoi (Upload) */
+.upload-section {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px dashed #334155;
+    margin-bottom: 30px;
+}
+
+.file-input-wrapper {
+    margin: 20px 0;
+}
+
+/* Cache l'input moche par défaut et stylise le label */
+#video-upload {
+    display: none;
+}
+
+.file-input-wrapper label {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #334155;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.file-input-wrapper label:hover {
+    background-color: #475569;
+}
+
+/* Bouton d'analyse */
+#analyze-btn {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 15px 40px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+}
+
+#analyze-btn:hover {
+    background-color: #7dd3fc;
+    transform: translateY(-2px);
+}
