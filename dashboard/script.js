@@ -89,5 +89,8 @@ function formaterScore(score) {
     return "--";
   }
 
-  return `${Math.round(Number(score) * 100)}%`;
+  const scoreNumerique = Number(score);
+  const scorePourcentage = scoreNumerique <= 1 ? scoreNumerique * 100 : scoreNumerique;
+
+  return `${Math.round(scorePourcentage)}%`;
 }
