@@ -117,3 +117,22 @@ font-size: 2.5rem; /* Plus gros pour attirer l'attention */
 font-size: 1.2rem;
 color: #f8fafc;
 }
+
+/* Adaptations pour tablettes et mobiles */
+@media (max-width: 600px) {
+    .results-grid {
+        grid-template-columns: 1fr; /* On passe à une seule colonne sur mobile */
+    }
+
+    header h1 {
+        font-size: 1.5rem; /* On réduit un peu le titre */
+    }
+
+    .upload-section {
+        padding: 20px;
+    }
+
+    #analyze-btn {
+        width: 100%; /* Le bouton prend toute la largeur pour être facile à cliquer */
+    }
+}
