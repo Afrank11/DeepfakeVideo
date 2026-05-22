@@ -1,39 +1,50 @@
 # DeepfakeVideo
 
-Module "Specialiste Deepfake Video" du projet Sentinelle Numerique.
+Plateforme de detection de videos deepfake pour le projet Sentinelle Numerique.
 
-## Partie 1 - API Gateway & Architecture
+## Architecture generale
 
-Cette premiere version met en place la passerelle API de base. Elle ne fait pas
-encore la vraie detection deepfake, mais elle definit le point d'entree que les
-autres modules vont utiliser.
-
-Flux prevu par le livrable :
+Le flux principal est :
 
 ```text
 Dashboard utilisateur
         |
         v
-Passerelle API FastAPI
+API Gateway FastAPI
         |
         v
 ServiceDeepfake
         |
-        +--> AnalyseurClignements
-        +--> AnalyseurLevres
+        +--> AnalyseurClignements (MediaPipe)
+        +--> AnalyseurLevres (SyncNet ou placeholder)
+        +--> CalculateurScore
         |
         v
 ResultatAnalyse JSON
 ```
 
-## Lancer le backend
+## Lancement local
+
+Installer les dependances backend :
+
+```bash
+pip install -r backend/requirements.txt
+```
+
+Lancer l'API FastAPI depuis la racine du projet :
+
+```bash
+uvicorn backend.app.main:app --reload
+```
+
+Ou depuis le dossier `backend` :
 
 ```bash
 cd backend
 uvicorn app.main:app --reload
 ```
 
-Ensuite ouvrir :
+Documentation FastAPI :
 
 ```text
 http://127.0.0.1:8000/docs
@@ -42,6 +53,7 @@ http://127.0.0.1:8000/docs
 ## Routes disponibles
 
 ```text
+GET  /
 GET  /api/v1/health
 GET  /api/v1/architecture
 POST /api/v1/deepfake/analyser-video
@@ -53,3 +65,9 @@ POST /api/v1/deepfake/analyser-video
 - Moteur detection yeux : MediaPipe et calcul des clignements.
 - Synchro labiale : module provisoire, puis SyncNet ou alternative.
 - Tableau de bord : interface utilisateur et affichage du score.
+
+## Documentation
+
+- `docs/architecture.md` : description de l'architecture globale.
+- `docs/api_gateway.md` : role de l'API Gateway.
+- `docs/moteur_yeux.md` : fonctionnement du moteur de clignements.

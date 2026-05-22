@@ -1,9 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
 
 @dataclass
 class ResultatAnalyse:
+    """Resultat JSON retourne apres l'analyse d'une video."""
+
     nom_fichier: str
     score_yeux: float
     score_levres: float
@@ -11,7 +13,9 @@ class ResultatAnalyse:
     niveau: str
     statut: str
     message: str
-    horodatage: str
+    horodatage: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
     @classmethod
     def provisoire(cls, nom_fichier: str) -> "ResultatAnalyse":
@@ -22,18 +26,13 @@ class ResultatAnalyse:
             score_final=0.0,
             niveau="Non calcule",
             statut="recu",
-            message="Video recue par la passerelle. Les analyseurs seront branches dans les prochains modules.",
-            horodatage=datetime.now(timezone.utc).isoformat()
+            message="Video recue par la passerelle. Les analyseurs seront branches progressivement.",
         )
 
+    def to_dict(self) -> dict:
+        """Convertit le resultat en dictionnaire compatible JSON/FastAPI."""
+        return asdict(self)
+
     def vers_json(self) -> dict:
-        return {
-            "nom_fichier": self.nom_fichier,
-            "score_yeux": self.score_yeux,
-            "score_levres": self.score_levres,
-            "score_final": self.score_final,
-            "niveau": self.niveau,
-            "statut": self.statut,
-            "message": self.message,
-            "horodatage": self.horodatage
-        }
+        """Alias francophone utilise par les routes existantes."""
+        return self.to_dict()
