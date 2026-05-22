@@ -79,3 +79,41 @@ header h1 {
     background-color: #7dd3fc;
     transform: translateY(-2px);
 }
+
+/* Style individuel des cartes */
+.card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #334155;
+}
+
+.card h3 {
+margin-top: 0;
+color: var(--text-dim);
+font-size: 0.9rem;
+text-transform: uppercase;
+}
+
+.card p {
+font-size: 1.8rem;
+font-weight: bold;
+margin: 10px 0 0 0;
+color: var(--accent-color);
+}
+
+.card.highlight {
+border: 2px solid var(--accent-color);
+background-color: rgba(56, 189, 248, 0.05);
+}
+
+.card.highlight p {
+font-size: 2.5rem; /* Plus gros pour attirer l'attention */
+}
+
+/* Texte pour le niveau de suspicion */
+#suspicion-level {
+font-size: 1.2rem;
+color: #f8fafc;
+}
