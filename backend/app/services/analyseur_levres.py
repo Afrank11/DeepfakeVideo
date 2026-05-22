@@ -112,6 +112,9 @@ class AnalyseurLevres:
         except json.JSONDecodeError:
             return self._convertir_en_float(sortie)
 
+        if isinstance(donnees, int | float):
+            return self._convertir_en_float(donnees)
+
         if isinstance(donnees, dict):
             for cle in ("score_suspicion", "score", "suspicion"):
                 if cle in donnees:
