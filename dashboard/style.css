@@ -1,0 +1,138 @@
+/* Configuration de base */
+:root {
+    --bg-color: #0f172a;      /* Bleu très foncé */
+    --card-bg: #1e293b;       /* Gris-bleu pour les cartes */
+    --accent-color: #38bdf8;  /* Bleu clair pour l'action */
+    --text-main: #f8fafc;     /* Blanc cassé */
+    --text-dim: #94a3b8;      /* Gris pour les textes secondaires */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 900px;
+}
+
+header h1 {
+    text-align: center;
+    color: var(--accent-color);
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Style de la zone d'envoi (Upload) */
+.upload-section {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px dashed #334155;
+    margin-bottom: 30px;
+}
+
+.file-input-wrapper {
+    margin: 20px 0;
+}
+
+/* Cache l'input moche par défaut et stylise le label */
+#video-upload {
+    display: none;
+}
+
+.file-input-wrapper label {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #334155;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.file-input-wrapper label:hover {
+    background-color: #475569;
+}
+
+/* Bouton d'analyse */
+#analyze-btn {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 15px 40px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+}
+
+#analyze-btn:hover {
+    background-color: #7dd3fc;
+    transform: translateY(-2px);
+}
+
+/* Style individuel des cartes */
+.card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #334155;
+}
+
+.card h3 {
+margin-top: 0;
+color: var(--text-dim);
+font-size: 0.9rem;
+text-transform: uppercase;
+}
+
+.card p {
+font-size: 1.8rem;
+font-weight: bold;
+margin: 10px 0 0 0;
+color: var(--accent-color);
+}
+
+.card.highlight {
+border: 2px solid var(--accent-color);
+background-color: rgba(56, 189, 248, 0.05);
+}
+
+.card.highlight p {
+font-size: 2.5rem; /* Plus gros pour attirer l'attention */
+}
+
+/* Texte pour le niveau de suspicion */
+#suspicion-level {
+font-size: 1.2rem;
+color: #f8fafc;
+}
+
+/* Adaptations pour tablettes et mobiles */
+@media (max-width: 600px) {
+    .results-grid {
+        grid-template-columns: 1fr; /* On passe à une seule colonne sur mobile */
+    }
+
+    header h1 {
+        font-size: 1.5rem; /* On réduit un peu le titre */
+    }
+
+    .upload-section {
+        padding: 20px;
+    }
+
+    #analyze-btn {
+        width: 100%; /* Le bouton prend toute la largeur pour être facile à cliquer */
+    }
+}

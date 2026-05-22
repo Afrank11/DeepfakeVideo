@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinelle Numérique - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <h1>Sentinelle Numérique</h1>
+        </header>
+
+        <main>
+            <!-- Section 1 : Envoi de la vidéo -->
+            <section class="upload-section">
+                <h2>Analyse de Vidéo</h2>
+                <form id="upload-form">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="video-upload" accept="video/*">
+                        <label for="video-upload">Choisir une vidéo (MP4, AVI...)</label>
+                    </div>
+                    <button type="submit" id="analyze-btn">Lancer l'analyse</button>
+                </form>
+            </section>
+
+            <!-- Section 2 : Affichage des scores (Placeholders) -->
+            <section class="results-section">
+                <h2>Résultats de l'analyse</h2>
+                <div class="results-grid">
+                    <div class="card">
+                        <h3>Score Yeux</h3>
+                        <p id="score-eyes">--</p>
+                    </div>
+                    <div class="card">
+                        <h3>Score Lèvres</h3>
+                        <p id="score-lips">--</p>
+                    </div>
+                    <div class="card highlight">
+                        <h3>Score Final</h3>
+                        <p id="score-final">--</p>
+                    </div>
+                    <div class="card">
+                        <h3>Niveau de Suspicion</h3>
+                        <p id="suspicion-level">En attente...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
