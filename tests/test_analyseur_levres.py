@@ -1,3 +1,5 @@
+import sys
+
 from app.services.analyseur_levres import AnalyseurLevres
 
 
@@ -31,3 +33,39 @@ def test_analyser_retourne_un_score_entre_0_et_100(tmp_path):
     score = analyseur.analyser(str(chemin_video))
 
     assert 0.0 <= score <= 100.0
+
+
+def test_analyser_utilise_score_syncnet_configure(tmp_path):
+    chemin_video = tmp_path / "exemple.mp4"
+    chemin_video.write_bytes(b"video provisoire")
+    commande_syncnet = [sys.executable, "-c", "print(72.5)"]
+
+    analyseur = AnalyseurLevres(commande_syncnet=commande_syncnet)
+
+    score = analyseur.analyser(str(chemin_video))
+
+    assert score == 72.5
+
+
+def test_analyser_lit_score_syncnet_json(tmp_path):
+    chemin_video = tmp_path / "exemple.mp4"
+    chemin_video.write_bytes(b"video provisoire")
+    commande_syncnet = [
+        sys.executable,
+        "-c",
+        "print('{\"score_suspicion\": 64.0}')",
+    ]
+
+    analyseur = AnalyseurLevres(commande_syncnet=commande_syncnet)
+
+    score = analyseur.analyser(str(chemin_video))
+
+    assert score == 64.0
+
+
+def test_normaliser_score_garde_intervalle_0_100():
+    analyseur = AnalyseurLevres()
+
+    assert analyseur._normaliser_score(-5.0) == 0.0
+    assert analyseur._normaliser_score(45.0) == 45.0
+    assert analyseur._normaliser_score(120.0) == 100.0
