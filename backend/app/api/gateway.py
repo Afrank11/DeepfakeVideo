@@ -1,5 +1,9 @@
+from pathlib import Path
+from uuid import uuid4
+
 from fastapi import APIRouter, File, UploadFile
 
+from ..models.resultat_analyse import ResultatAnalyse
 from ..services.service_deepfake import ServiceDeepfake
 
 
@@ -45,14 +49,46 @@ async def analyser_video(video: UploadFile = File(...)) -> dict:
     contenu = await video.read()
     service = ServiceDeepfake()
 
-    resultat = service.analyser_fichier(
+    validation = service.analyser_fichier(
         nom_fichier=video.filename or "video_sans_nom",
         type_contenu=video.content_type or "application/octet-stream",
         taille_octets=len(contenu)
-    ).vers_json()
+    )
 
+    if validation.statut == "rejete":
+        return _ajouter_metadonnees_upload(
+            validation.vers_json(),
+            video
+        )
+
+    dossier_temporaire = Path("videos_temporaires")
+    dossier_temporaire.mkdir(exist_ok=True)
+
+    extension = Path(video.filename or "video.mp4").suffix or ".mp4"
+    chemin_video = dossier_temporaire / f"{uuid4().hex}{extension}"
+
+    try:
+        chemin_video.write_bytes(contenu)
+        resultat = service.analyser_video(str(chemin_video)).vers_json()
+    except Exception as erreur:
+        resultat = ResultatAnalyse(
+            nom_fichier=video.filename or "video_sans_nom",
+            score_yeux=0.0,
+            score_levres=0.0,
+            score_final=100.0,
+            niveau="Erreur",
+            statut="erreur",
+            message=f"Analyse impossible: {erreur}",
+        ).vers_json()
+    finally:
+        if chemin_video.exists():
+            chemin_video.unlink()
+
+    return _ajouter_metadonnees_upload(resultat, video)
+
+
+def _ajouter_metadonnees_upload(resultat: dict, video: UploadFile) -> dict:
     resultat["filename"] = video.filename
     resultat["content_type"] = video.content_type
-    resultat["score_suspicion"] = None
-
+    resultat["score_suspicion"] = resultat.get("score_final")
     return resultat

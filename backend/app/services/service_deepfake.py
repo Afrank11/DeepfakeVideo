@@ -66,8 +66,9 @@ class ServiceDeepfake:
         return AnalyseurClignements().analyser(chemin_video)
 
     def _analyser_levres(self, chemin_video: str) -> float:
-        # Placeholder en attendant la branche SyncNet de Nkwawya.
-        return 50.0
+        from .analyseur_levres import AnalyseurLevres
+
+        return AnalyseurLevres().analyser(chemin_video)
 
     def _calculer_score_final(self, score_yeux: float, score_levres: float) -> float:
         return round((score_yeux + score_levres) / 2, 2)

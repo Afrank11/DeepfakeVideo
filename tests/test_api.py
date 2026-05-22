@@ -31,4 +31,18 @@ def test_analyser_video_accepts_uploaded_file():
     assert response.status_code == 200
     assert data["filename"] == "demo.mp4"
     assert data["content_type"] == "video/mp4"
-    assert data["score_suspicion"] is None
+    assert data["statut"] == "erreur"
+    assert data["score_suspicion"] == 100.0
+
+
+def test_analyser_video_rejects_non_video_file():
+    response = client.post(
+        "/api/v1/deepfake/analyser-video",
+        files={"video": ("notes.txt", b"texte", "text/plain")},
+    )
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["statut"] == "rejete"
+    assert data["niveau"] == "Erreur"
