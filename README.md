@@ -50,6 +50,24 @@ Documentation FastAPI :
 http://127.0.0.1:8000/docs
 ```
 
+## Lancement du dashboard
+
+Demarrer d'abord l'API FastAPI, puis ouvrir le fichier suivant dans le
+navigateur :
+
+```text
+dashboard/index.html
+```
+
+Le tableau de bord envoie la video selectionnee vers :
+
+```text
+http://127.0.0.1:8000/api/v1/deepfake/analyser-video
+```
+
+La reponse JSON est utilisee pour afficher `score_yeux`, `score_levres`,
+`score_final`, `niveau` et `message`.
+
 ## Routes disponibles
 
 ```text
