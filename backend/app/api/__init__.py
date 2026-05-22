@@ -1,1 +1,1 @@
-"""Routes exposees par la passerelle API."""
+"""Routes API exposees par la passerelle FastAPI."""

@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.gateway import router as gateway_router
+from .api.gateway import router as gateway_router
 
 
 def creer_application() -> FastAPI:
     app = FastAPI(
-        title="Sentinelle Numerique - API Gateway",
-        description="Passerelle API du module Specialiste Deepfake Video",
+        title="Sentinelle Numerique - DeepfakeVideo",
+        description="API de base pour recevoir des videos et exposer les routes de la passerelle.",
         version="0.1.0"
     )
 
@@ -20,6 +20,14 @@ def creer_application() -> FastAPI:
     )
 
     app.include_router(gateway_router)
+
+    @app.get("/")
+    def accueil() -> dict[str, str]:
+        """Route racine minimale pour confirmer que le backend demarre."""
+        return {
+            "message": "Bienvenue sur l'API Sentinelle Numerique",
+            "documentation": "/docs",
+        }
 
     return app
 
