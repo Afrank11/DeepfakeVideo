@@ -11,6 +11,7 @@ class AnalyseurClignements:
 
     OEIL_GAUCHE = (33, 160, 158, 133, 153, 144)
     OEIL_DROIT = (362, 385, 387, 263, 373, 380)
+    SCORE_MEDIAPIPE_INDISPONIBLE = 50.0
 
     def __init__(self, seuil_fermeture: float = 0.20, images_fermees_min: int = 2):
         if images_fermees_min < 1:
@@ -29,7 +30,10 @@ class AnalyseurClignements:
         if not chemin.is_file():
             raise ValueError(f"Le chemin donne n'est pas un fichier: {chemin_video}")
 
-        cv2, mp = self._charger_dependances()
+        try:
+            cv2, face_mesh_module = self._charger_dependances()
+        except ImportError:
+            return self.SCORE_MEDIAPIPE_INDISPONIBLE
 
         capture = cv2.VideoCapture(str(chemin))
 
@@ -42,7 +46,7 @@ class AnalyseurClignements:
         images_fermees_consecutives = 0
         clignement_deja_compte = False
 
-        face_mesh = mp.solutions.face_mesh.FaceMesh(
+        face_mesh = face_mesh_module.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
             refine_landmarks=True
@@ -161,4 +165,12 @@ class AnalyseurClignements:
                 "pip install -r backend/requirements.txt"
             ) from erreur
 
-        return cv2, mp
+        try:
+            face_mesh_module = mp.solutions.face_mesh
+        except AttributeError as erreur:
+            raise ImportError(
+                "La version installee de MediaPipe ne contient pas "
+                "mediapipe.solutions.face_mesh."
+            ) from erreur
+
+        return cv2, face_mesh_module
