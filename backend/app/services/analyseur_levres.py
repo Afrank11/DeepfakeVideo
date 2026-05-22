@@ -21,12 +21,19 @@ class AnalyseurLevres:
 
     def _preparer_entrees_syncnet(self, chemin_video: str) -> dict:
         """Prepare les donnees qui seront envoyees plus tard a SyncNet."""
+        chemin_audio = self._extraire_audio(chemin_video)
+
         return {
             "chemin_video": chemin_video,
-            "chemin_audio": None,
+            "chemin_audio": chemin_audio,
             "images_bouche": [],
         }
+
+    def _extraire_audio(self, chemin_video: str) -> None:
+        """Reserve l'emplacement de l'extraction audio future."""
+        return None
 
     def _calculer_score_syncnet(self, donnees_syncnet: dict) -> float:
         """Retourne un score provisoire en attendant le vrai modele SyncNet."""
         return self.SCORE_PROVISOIRE
+    
