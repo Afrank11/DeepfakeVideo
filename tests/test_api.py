@@ -31,8 +31,8 @@ def test_analyser_video_accepts_uploaded_file():
     assert response.status_code == 200
     assert data["filename"] == "demo.mp4"
     assert data["content_type"] == "video/mp4"
-    assert data["statut"] == "erreur"
-    assert data["score_suspicion"] == 100.0
+    assert data["statut"] == "termine"
+    assert data["score_suspicion"] == data["score_final"]
 
 
 def test_analyser_video_rejects_non_video_file():
