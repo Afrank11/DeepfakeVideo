@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentinelle Numérique - Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -22,6 +23,10 @@
                         <label for="video-upload">Choisir une vidéo (MP4, AVI...)</label>
                     </div>
                     <button type="submit" id="analyze-btn">Lancer l'analyse</button>
+                    <div id="loader" class="hidden">
+                    <div class="spinner"></div>
+                        <p>Analyse des pixels en cours...</p>
+                    </div>
                 </form>
             </section>
 
@@ -49,5 +54,8 @@
             </section>
         </main>
     </div>
+        <script>
+        lucide.createIcons();
+        </script>
 </body>
 </html>
