@@ -42,6 +42,11 @@ def test_oeil_est_ferme_depend_du_seuil():
     assert analyseur.oeil_est_ferme(0.30) is False
 
 
+def test_images_fermees_min_refuse_une_valeur_invalide():
+    with pytest.raises(ValueError):
+        AnalyseurClignements(images_fermees_min=0)
+
+
 def test_calculer_score_penalise_les_clignements_anormaux():
     analyseur = AnalyseurClignements()
 

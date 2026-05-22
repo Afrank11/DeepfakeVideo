@@ -12,8 +12,12 @@ class AnalyseurClignements:
     OEIL_GAUCHE = (33, 160, 158, 133, 153, 144)
     OEIL_DROIT = (362, 385, 387, 263, 373, 380)
 
-    def __init__(self, seuil_fermeture: float = 0.20):
+    def __init__(self, seuil_fermeture: float = 0.20, images_fermees_min: int = 2):
+        if images_fermees_min < 1:
+            raise ValueError("images_fermees_min doit etre superieur ou egal a 1")
+
         self.seuil_fermeture = seuil_fermeture
+        self.images_fermees_min = images_fermees_min
 
     def analyser(self, chemin_video: str) -> float:
         """Retourne un score de suspicion entre 0 et 100."""
@@ -35,7 +39,8 @@ class AnalyseurClignements:
         fps = capture.get(cv2.CAP_PROP_FPS) or 30
         nombre_images = 0
         nombre_clignements = 0
-        oeil_ferme_avant = False
+        images_fermees_consecutives = 0
+        clignement_deja_compte = False
 
         face_mesh = mp.solutions.face_mesh.FaceMesh(
             static_image_mode=False,
@@ -55,17 +60,26 @@ class AnalyseurClignements:
                 resultats = face_mesh.process(image_rgb)
 
                 if not resultats.multi_face_landmarks:
-                    oeil_ferme_avant = False
+                    images_fermees_consecutives = 0
+                    clignement_deja_compte = False
                     continue
 
                 landmarks = resultats.multi_face_landmarks[0].landmark
                 ouverture_moyenne = self.calculer_ouverture_moyenne(landmarks)
                 oeil_ferme = self.oeil_est_ferme(ouverture_moyenne)
 
-                if oeil_ferme and not oeil_ferme_avant:
-                    nombre_clignements += 1
+                if oeil_ferme:
+                    images_fermees_consecutives += 1
 
-                oeil_ferme_avant = oeil_ferme
+                    if (
+                        images_fermees_consecutives >= self.images_fermees_min
+                        and not clignement_deja_compte
+                    ):
+                        nombre_clignements += 1
+                        clignement_deja_compte = True
+                else:
+                    images_fermees_consecutives = 0
+                    clignement_deja_compte = False
         finally:
             capture.release()
             face_mesh.close()
