@@ -5,8 +5,8 @@ from pathlib import Path
 class AnalyseurClignements:
     """Analyse les clignements d'yeux dans une video.
 
-    Cette premiere version sert de base stable pour le moteur yeux. Les prochains
-    commits ajouteront OpenCV, MediaPipe FaceMesh et le calcul Eye Aspect Ratio.
+    Le moteur utilise OpenCV pour parcourir la video et MediaPipe FaceMesh pour
+    recuperer les points du visage.
     """
 
     OEIL_GAUCHE = (33, 160, 158, 133, 153, 144)
@@ -16,12 +16,7 @@ class AnalyseurClignements:
         self.seuil_fermeture = seuil_fermeture
 
     def analyser(self, chemin_video: str) -> float:
-        """Retourne un score de suspicion entre 0 et 100.
-
-        Pour l'instant, le module verifie seulement que le fichier video existe.
-        Un score neutre de 50 indique que l'analyse reelle n'est pas encore
-        branchee.
-        """
+        """Retourne un score de suspicion entre 0 et 100."""
         chemin = Path(chemin_video)
 
         if not chemin.exists():
@@ -30,7 +25,66 @@ class AnalyseurClignements:
         if not chemin.is_file():
             raise ValueError(f"Le chemin donne n'est pas un fichier: {chemin_video}")
 
-        return 50.0
+        cv2, mp = self._charger_dependances()
+
+        capture = cv2.VideoCapture(str(chemin))
+
+        if not capture.isOpened():
+            raise ValueError(f"Impossible d'ouvrir la video: {chemin_video}")
+
+        fps = capture.get(cv2.CAP_PROP_FPS) or 30
+        nombre_images = 0
+        nombre_clignements = 0
+        oeil_ferme_avant = False
+
+        face_mesh = mp.solutions.face_mesh.FaceMesh(
+            static_image_mode=False,
+            max_num_faces=1,
+            refine_landmarks=True
+        )
+
+        try:
+            while True:
+                succes, image = capture.read()
+
+                if not succes:
+                    break
+
+                nombre_images += 1
+                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                resultats = face_mesh.process(image_rgb)
+
+                if not resultats.multi_face_landmarks:
+                    oeil_ferme_avant = False
+                    continue
+
+                landmarks = resultats.multi_face_landmarks[0].landmark
+                ouverture_moyenne = self.calculer_ouverture_moyenne(landmarks)
+                oeil_ferme = self.oeil_est_ferme(ouverture_moyenne)
+
+                if oeil_ferme and not oeil_ferme_avant:
+                    nombre_clignements += 1
+
+                oeil_ferme_avant = oeil_ferme
+        finally:
+            capture.release()
+            face_mesh.close()
+
+        duree_secondes = nombre_images / fps
+
+        return self.calculer_score(nombre_clignements, duree_secondes)
+
+    def calculer_ouverture_moyenne(self, landmarks) -> float:
+        ouverture_gauche = self.calculer_ouverture_oeil(
+            landmarks,
+            self.OEIL_GAUCHE
+        )
+        ouverture_droite = self.calculer_ouverture_oeil(
+            landmarks,
+            self.OEIL_DROIT
+        )
+
+        return (ouverture_gauche + ouverture_droite) / 2
 
     def calculer_ouverture_oeil(self, landmarks, indices_oeil: tuple[int, ...]) -> float:
         """Calcule l'ouverture d'un oeil avec la formule Eye Aspect Ratio.
@@ -82,3 +136,15 @@ class AnalyseurClignements:
             return 25.0
 
         return 70.0
+
+    def _charger_dependances(self):
+        try:
+            import cv2
+            import mediapipe as mp
+        except ImportError as erreur:
+            raise ImportError(
+                "Installez les dependances du moteur yeux avec: "
+                "pip install -r backend/requirements.txt"
+            ) from erreur
+
+        return cv2, mp
