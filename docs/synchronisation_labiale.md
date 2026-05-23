@@ -63,11 +63,37 @@ Exemple de sortie attendue :
 }
 ```
 
-## Integration future du vrai SyncNet
+## Integration du vrai SyncNet
 
-Le vrai SyncNet ou un modele equivalent pourra remplacer l'adaptateur de
-demonstration. La commande devra simplement retourner un nombre ou un JSON
-contenant l'une des cles suivantes :
+Le vrai SyncNet peut remplacer l'adaptateur de demonstration avec le pipeline
+externe installe localement dans :
+
+```text
+C:\Tools\syncnet_python
+```
+
+Le projet ne versionne pas le modele SyncNet, car le fichier est volumineux. Il
+versionne seulement l'adaptateur :
+
+```text
+backend/tools/syncnet_pipeline_adapter.py
+```
+
+Dans le fichier `.env` local, utiliser :
+
+```text
+SYNCNET_COMMAND=python backend/tools/syncnet_pipeline_adapter.py --video {video}
+```
+
+L'adaptateur lance d'abord `run_pipeline.py` pour detecter et recadrer le visage,
+puis `run_syncnet.py` pour calculer :
+
+- `AV offset` : decalage audio/video en frames ;
+- `Confidence` : confiance de SyncNet dans la synchronisation ;
+- `score_suspicion` : score entre 0 et 100 calcule pour notre application.
+
+La commande doit retourner un nombre ou un JSON contenant l'une des cles
+suivantes :
 
 ```text
 score_suspicion
@@ -75,10 +101,16 @@ score
 suspicion
 ```
 
-Exemple :
+Exemple de sortie du pipeline reel :
 
-```powershell
-$env:SYNCNET_COMMAND = "python C:\SyncNet\run_syncnet.py --video {video}"
+```json
+{
+  "score_suspicion": 54.66,
+  "mode": "syncnet_reel_pipeline",
+  "offset": -3.0,
+  "confidence": 6.584,
+  "message": "Score calcule avec le pipeline reel SyncNet."
+}
 ```
 
 La logique du vrai modele sera :
@@ -92,3 +124,7 @@ La logique du vrai modele sera :
 Le fichier `backend/app/services/analyseur_levres.py` contient deja les methodes
 necessaires pour construire la commande, l'executer, lire la sortie et normaliser
 le score entre 0 et 100.
+
+Remarque : sur CPU, le pipeline reel peut prendre plus d'une minute pour une
+video courte. C'est normal, car il doit detecter le visage image par image avant
+de comparer les levres et l'audio.

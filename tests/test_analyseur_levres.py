@@ -63,6 +63,30 @@ def test_analyser_lit_score_syncnet_json(tmp_path):
     assert score == 64.0
 
 
+def test_analyser_detaille_conserve_les_mesures_syncnet_json(tmp_path):
+    chemin_video = tmp_path / "exemple.mp4"
+    chemin_video.write_bytes(b"video provisoire")
+    commande_syncnet = [
+        sys.executable,
+        "-c",
+        (
+            "print('{\"score_suspicion\": 54.66, \"mode\": "
+            "\"syncnet_reel_pipeline\", \"offset\": -3, "
+            "\"confidence\": 6.584}')"
+        ),
+    ]
+
+    analyseur = AnalyseurLevres(commande_syncnet=commande_syncnet)
+
+    resultat = analyseur.analyser_detaille(str(chemin_video))
+
+    assert resultat["score"] == 54.66
+    assert resultat["methode"] == "syncnet_configure"
+    assert resultat["mode"] == "syncnet_reel_pipeline"
+    assert resultat["offset"] == -3
+    assert resultat["confidence"] == 6.584
+
+
 def test_normaliser_score_garde_intervalle_0_100():
     analyseur = AnalyseurLevres(charger_env_local=False)
 

@@ -1,5 +1,5 @@
-const API_ANALYSE_URL = "http://127.0.0.1:8000/api/v1/deepfake/analyser-video";
-const API_HEALTH_URL = "http://127.0.0.1:8000/api/v1/health";
+const API_BASES = ["http://127.0.0.1:8000", "http://127.0.0.1:8001"];
+let apiBaseActive = API_BASES[0];
 
 const formulaire = document.querySelector("#upload-form");
 const champVideo = document.querySelector("#video-upload");
@@ -39,14 +39,23 @@ formulaire.addEventListener("submit", async (event) => {
 });
 
 async function verifierApi() {
-  try {
-    const reponse = await fetch(API_HEALTH_URL);
-    apiStatus.textContent = reponse.ok ? "API active" : "API indisponible";
-    apiStatus.style.color = reponse.ok ? "var(--green)" : "var(--red)";
-  } catch {
-    apiStatus.textContent = "API hors ligne";
-    apiStatus.style.color = "var(--red)";
+  for (const base of API_BASES) {
+    try {
+      const reponse = await fetch(`${base}/api/v1/health`);
+
+      if (reponse.ok) {
+        apiBaseActive = base;
+        apiStatus.textContent = `API active (${new URL(base).port})`;
+        apiStatus.style.color = "var(--green)";
+        return;
+      }
+    } catch {
+      // On essaye le port suivant.
+    }
   }
+
+  apiStatus.textContent = "API hors ligne";
+  apiStatus.style.color = "var(--red)";
 }
 
 async function analyserVideo() {
@@ -67,7 +76,7 @@ async function analyserVideo() {
     definirStatut(statusCleanup, "", "Nettoyage en attente");
     afficherMessage("Analyse en cours", "La video est envoyee puis analysee par les modules yeux et levres.");
 
-    const reponse = await fetch(API_ANALYSE_URL, {
+    const reponse = await fetch(`${apiBaseActive}/api/v1/deepfake/analyser-video`, {
       method: "POST",
       body: donnees,
     });
@@ -102,8 +111,8 @@ function afficherResultats(resultat) {
   niveauSuspicion.textContent = normaliserNiveau(resultat.niveau);
   verdictMessage.textContent = resultat.message || "Analyse terminee.";
 
-  eyesDetail.textContent = detailsYeux.message || "Score base sur le module de clignements.";
-  lipsDetail.textContent = detailsLevres.message || "Score base sur le module de synchronisation labiale.";
+  eyesDetail.textContent = decrireScoreYeux(detailsYeux);
+  lipsDetail.textContent = decrireScoreLevres(detailsLevres);
   finalDetail.textContent = resultat.details?.interpretation || "Score combine des modules disponibles.";
 
   metaFilename.textContent = resultat.upload?.nom_original || resultat.filename || "--";
@@ -151,6 +160,38 @@ function formaterScore(score) {
   }
 
   return `${Math.round(Number(score))}%`;
+}
+
+function decrireScoreYeux(detailsYeux) {
+  const morceaux = [
+    detailsYeux.message || "Score base sur le module de clignements.",
+  ];
+
+  if (detailsYeux.clignements_detectes !== undefined) {
+    morceaux.push(`${detailsYeux.clignements_detectes} clignements detectes`);
+  }
+
+  if (detailsYeux.duree_secondes !== undefined) {
+    morceaux.push(`${Number(detailsYeux.duree_secondes).toFixed(1)} s analysees`);
+  }
+
+  return morceaux.join(" ");
+}
+
+function decrireScoreLevres(detailsLevres) {
+  const morceaux = [
+    detailsLevres.message || "Score base sur le module de synchronisation labiale.",
+  ];
+
+  if (detailsLevres.offset !== undefined) {
+    morceaux.push(`Decalage audio/video: ${detailsLevres.offset} frame(s).`);
+  }
+
+  if (detailsLevres.confidence !== undefined) {
+    morceaux.push(`Confiance SyncNet: ${Number(detailsLevres.confidence).toFixed(3)}.`);
+  }
+
+  return morceaux.join(" ");
 }
 
 function formaterTaille(octets) {

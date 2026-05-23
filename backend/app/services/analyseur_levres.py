@@ -14,7 +14,7 @@ class AnalyseurLevres:
 
     SCORE_PROVISOIRE = 25.0
     SCORE_VIDEO_INTROUVABLE = 100.0
-    TIMEOUT_SYNCNET_SECONDES = 30
+    TIMEOUT_SYNCNET_SECONDES = 420
 
     def __init__(
         self,
@@ -38,14 +38,10 @@ class AnalyseurLevres:
             }
 
         donnees_syncnet = self._preparer_entrees_syncnet(chemin_video)
-        score_syncnet = self._calculer_score_syncnet(donnees_syncnet)
+        resultat_syncnet = self._calculer_score_syncnet(donnees_syncnet)
 
-        if score_syncnet is not None:
-            return {
-                "score": score_syncnet,
-                "methode": "syncnet_configure",
-                "message": "Score fourni par la commande SyncNet configuree.",
-            }
+        if resultat_syncnet is not None:
+            return resultat_syncnet
 
         return self._score_provisoire_par_mouvement(chemin_video)
 
@@ -68,21 +64,45 @@ class AnalyseurLevres:
         """Reserve l'emplacement de la detection future de la bouche."""
         return []
 
-    def _calculer_score_syncnet(self, donnees_syncnet: dict) -> float | None:
+    def _calculer_score_syncnet(self, donnees_syncnet: dict) -> dict | None:
         """Retourne le score SyncNet ou None si SyncNet n'est pas configure."""
         if not self.commande_syncnet:
             return None
 
-        score_brut = self._executer_commande_syncnet(donnees_syncnet)
-        if score_brut is None:
+        sortie_syncnet = self._executer_commande_syncnet(donnees_syncnet)
+        if sortie_syncnet is None:
             return None
 
-        return self._normaliser_score(score_brut)
+        if isinstance(sortie_syncnet, dict):
+            score_brut = self._extraire_score_depuis_donnees(sortie_syncnet)
+            if score_brut is None:
+                return None
+
+            resultat = {
+                "score": self._normaliser_score(score_brut),
+                "methode": "syncnet_configure",
+                "message": sortie_syncnet.get(
+                    "message",
+                    "Score fourni par la commande SyncNet configuree.",
+                ),
+            }
+
+            for cle in ("mode", "offset", "confidence"):
+                if cle in sortie_syncnet:
+                    resultat[cle] = sortie_syncnet[cle]
+
+            return resultat
+
+        return {
+            "score": self._normaliser_score(sortie_syncnet),
+            "methode": "syncnet_configure",
+            "message": "Score fourni par la commande SyncNet configuree.",
+        }
 
     def _lire_commande_syncnet(self) -> list[str] | None:
         """Lit la commande SyncNet depuis la variable d'environnement."""
         commande = os.getenv("SYNCNET_COMMANDE") or os.getenv("SYNCNET_COMMAND")
-        if self.charger_env_local:
+        if self.charger_env_local and os.getenv("SYNCNET_DISABLE_ENV") != "1":
             commande = commande or self._lire_commande_depuis_env_local()
         if not commande:
             return None
@@ -111,7 +131,7 @@ class AnalyseurLevres:
 
         return None
 
-    def _executer_commande_syncnet(self, donnees_syncnet: dict) -> float | None:
+    def _executer_commande_syncnet(self, donnees_syncnet: dict) -> float | dict | None:
         """Execute SyncNet et extrait un score numerique de sa sortie."""
         commande = self._construire_commande_syncnet(donnees_syncnet["chemin_video"])
 
@@ -148,7 +168,7 @@ class AnalyseurLevres:
 
         return commande
 
-    def _extraire_score_sortie_syncnet(self, sortie: str) -> float | None:
+    def _extraire_score_sortie_syncnet(self, sortie: str) -> float | dict | None:
         """Accepte une sortie JSON ou un nombre simple."""
         sortie = sortie.strip()
         if not sortie:
@@ -163,9 +183,16 @@ class AnalyseurLevres:
             return self._convertir_en_float(donnees)
 
         if isinstance(donnees, dict):
-            for cle in ("score_suspicion", "score", "suspicion"):
-                if cle in donnees:
-                    return self._convertir_en_float(donnees[cle])
+            if self._extraire_score_depuis_donnees(donnees) is not None:
+                return donnees
+
+        return None
+
+    def _extraire_score_depuis_donnees(self, donnees: dict) -> float | None:
+        """Lit le score numerique dans une sortie JSON de SyncNet."""
+        for cle in ("score_suspicion", "score", "suspicion"):
+            if cle in donnees:
+                return self._convertir_en_float(donnees[cle])
 
         return None
 

@@ -49,6 +49,9 @@ def test_architecture_route_returns_layers():
 
 
 def test_analyser_video_accepts_uploaded_file(tmp_path):
+    import os
+
+    os.environ["SYNCNET_DISABLE_ENV"] = "1"
     contenu_video = creer_video_test(tmp_path)
 
     response = client.post(
