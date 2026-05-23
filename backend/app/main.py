@@ -25,7 +25,7 @@ def creer_application() -> FastAPI:
     def accueil() -> dict[str, str]:
         """Route racine minimale pour confirmer que le backend demarre."""
         return {
-            "message": "Bienvenue sur l'API Sentinelle Numerique",
+            "message": "Bienvenue sur l'API Sentinelle Numerique ABdoul",
             "documentation": "/docs",
         }
 
