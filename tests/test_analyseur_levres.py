@@ -7,7 +7,7 @@ def test_analyser_retourne_score_provisoire_pour_video_existante(tmp_path):
     chemin_video = tmp_path / "exemple.mp4"
     chemin_video.write_bytes(b"video provisoire")
 
-    analyseur = AnalyseurLevres()
+    analyseur = AnalyseurLevres(charger_env_local=False)
 
     score = analyseur.analyser(str(chemin_video))
 
@@ -17,7 +17,7 @@ def test_analyser_retourne_score_provisoire_pour_video_existante(tmp_path):
 def test_analyser_retourne_score_maximal_si_video_introuvable(tmp_path):
     chemin_video = tmp_path / "introuvable.mp4"
 
-    analyseur = AnalyseurLevres()
+    analyseur = AnalyseurLevres(charger_env_local=False)
 
     score = analyseur.analyser(str(chemin_video))
 
@@ -28,7 +28,7 @@ def test_analyser_retourne_un_score_entre_0_et_100(tmp_path):
     chemin_video = tmp_path / "exemple.mp4"
     chemin_video.write_bytes(b"video provisoire")
 
-    analyseur = AnalyseurLevres()
+    analyseur = AnalyseurLevres(charger_env_local=False)
 
     score = analyseur.analyser(str(chemin_video))
 
@@ -64,7 +64,7 @@ def test_analyser_lit_score_syncnet_json(tmp_path):
 
 
 def test_normaliser_score_garde_intervalle_0_100():
-    analyseur = AnalyseurLevres()
+    analyseur = AnalyseurLevres(charger_env_local=False)
 
     assert analyseur._normaliser_score(-5.0) == 0.0
     assert analyseur._normaliser_score(45.0) == 45.0

@@ -16,7 +16,12 @@ class AnalyseurLevres:
     SCORE_VIDEO_INTROUVABLE = 100.0
     TIMEOUT_SYNCNET_SECONDES = 30
 
-    def __init__(self, commande_syncnet: list[str] | None = None):
+    def __init__(
+        self,
+        commande_syncnet: list[str] | None = None,
+        charger_env_local: bool = True,
+    ):
+        self.charger_env_local = charger_env_local
         self.commande_syncnet = commande_syncnet or self._lire_commande_syncnet()
 
     def analyser(self, chemin_video: str) -> float:
@@ -77,9 +82,34 @@ class AnalyseurLevres:
     def _lire_commande_syncnet(self) -> list[str] | None:
         """Lit la commande SyncNet depuis la variable d'environnement."""
         commande = os.getenv("SYNCNET_COMMANDE") or os.getenv("SYNCNET_COMMAND")
+        if self.charger_env_local:
+            commande = commande or self._lire_commande_depuis_env_local()
         if not commande:
             return None
         return shlex.split(commande)
+
+    def _lire_commande_depuis_env_local(self) -> str | None:
+        """Lit SYNCNET_COMMAND depuis un fichier .env local si present."""
+        chemins_possibles = [
+            Path(".env"),
+            Path(__file__).resolve().parents[3] / ".env",
+        ]
+
+        for chemin in chemins_possibles:
+            if not chemin.is_file():
+                continue
+
+            for ligne in chemin.read_text(encoding="utf-8").splitlines():
+                ligne = ligne.strip()
+
+                if not ligne or ligne.startswith("#") or "=" not in ligne:
+                    continue
+
+                cle, valeur = ligne.split("=", 1)
+                if cle.strip() in {"SYNCNET_COMMAND", "SYNCNET_COMMANDE"}:
+                    return valeur.strip().strip('"').strip("'")
+
+        return None
 
     def _executer_commande_syncnet(self, donnees_syncnet: dict) -> float | None:
         """Execute SyncNet et extrait un score numerique de sa sortie."""

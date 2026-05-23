@@ -11,21 +11,77 @@ score eleve indique que la video doit etre consideree comme plus suspecte.
 
 ## Version actuelle
 
-La premiere version utilise un espace reserve propre dans la classe
-`AnalyseurLevres`. La methode principale est :
+La version actuelle utilise la classe `AnalyseurLevres`. La methode principale est :
 
 ```python
 analyser(chemin_video: str) -> float
 ```
 
-Pour une video existante, le module renvoie actuellement un score provisoire de
-`25.0`. Si le fichier video n'existe pas, il renvoie `100.0`, car l'analyse ne
-peut pas etre realisee correctement.
+Le module peut fonctionner de deux facons :
 
-## Integration future de SyncNet
+1. Si `SYNCNET_COMMAND` est configure, il execute cette commande externe et lit
+   le score retourne.
+2. Si aucune commande n'est configuree, il utilise un fallback par mouvement de
+   la zone basse du visage.
 
-SyncNet ou un modele equivalent sera utilise plus tard pour comparer la piste
-audio avec les mouvements visibles de la bouche. La logique future sera :
+## Configuration locale
+
+Pour tester le mode configure sans installer le vrai modele SyncNet, le projet
+fournit un adaptateur de demonstration :
+
+```text
+backend/tools/syncnet_demo.py
+```
+
+Dans PowerShell :
+
+```powershell
+$env:SYNCNET_COMMAND = "python backend/tools/syncnet_demo.py --video {video}"
+```
+
+Dans CMD :
+
+```cmd
+set SYNCNET_COMMAND=python backend/tools/syncnet_demo.py --video {video}
+```
+
+Ensuite lancer le backend depuis la racine du projet :
+
+```bash
+uvicorn backend.app.main:app --reload
+```
+
+Quand une video est analysee, `AnalyseurLevres` appelle la commande configuree,
+remplace `{video}` par le chemin du fichier temporaire, puis lit le JSON retourne.
+
+Exemple de sortie attendue :
+
+```json
+{
+  "score_suspicion": 42.0,
+  "mode": "syncnet_demo_adapter"
+}
+```
+
+## Integration future du vrai SyncNet
+
+Le vrai SyncNet ou un modele equivalent pourra remplacer l'adaptateur de
+demonstration. La commande devra simplement retourner un nombre ou un JSON
+contenant l'une des cles suivantes :
+
+```text
+score_suspicion
+score
+suspicion
+```
+
+Exemple :
+
+```powershell
+$env:SYNCNET_COMMAND = "python C:\SyncNet\run_syncnet.py --video {video}"
+```
+
+La logique du vrai modele sera :
 
 1. Extraire l'audio de la video.
 2. Detecter la region de la bouche et des levres dans les images.
@@ -33,6 +89,6 @@ audio avec les mouvements visibles de la bouche. La logique future sera :
 4. Attribuer un score de suspicion eleve si l'audio et les levres sont mal
    synchronises.
 
-Le fichier `backend/app/services/analyseur_levres.py` contient deja une methode
-interne `_preparer_entrees_syncnet` pour marquer l'emplacement de cette future
-preparation.
+Le fichier `backend/app/services/analyseur_levres.py` contient deja les methodes
+necessaires pour construire la commande, l'executer, lire la sortie et normaliser
+le score entre 0 et 100.
