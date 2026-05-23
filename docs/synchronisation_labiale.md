@@ -19,9 +19,11 @@ analyser(chemin_video: str) -> float
 
 Le module peut fonctionner de deux facons :
 
-1. Si `SYNCNET_COMMAND` est configure, il execute cette commande externe et lit
+1. Si `SYNCNET_API_URL` est configure, il envoie la video a une API SyncNet et
+   lit le score JSON retourne.
+2. Si `SYNCNET_COMMAND` est configure, il execute cette commande externe et lit
    le score retourne.
-2. Si aucune commande n'est configuree, il utilise un fallback par mouvement de
+3. Si aucune API/commande n'est configuree, il utilise un fallback par mouvement de
    la zone basse du visage.
 
 ## Configuration locale
@@ -79,7 +81,41 @@ versionne seulement l'adaptateur :
 backend/tools/syncnet_pipeline_adapter.py
 ```
 
-Dans le fichier `.env` local, utiliser :
+### Mode API recommande
+
+Pour respecter l'architecture API Gateway + microservices, le pipeline SyncNet
+est expose par un microservice FastAPI separe :
+
+```bash
+uvicorn backend.syncnet_api.main:app --reload --port 8010
+```
+
+Le backend principal reste l'API Gateway :
+
+```bash
+uvicorn backend.app.main:app --reload --port 8001
+```
+
+Dans le fichier `.env` local du backend principal, utiliser :
+
+```text
+SYNCNET_API_URL=http://127.0.0.1:8010/api/v1/syncnet/analyser-levres
+SYNCNET_API_KEY=
+```
+
+Le flux devient donc :
+
+```text
+Dashboard
+  -> API Gateway FastAPI
+      -> AnalyseurLevres
+          -> API SyncNet
+              -> Pipeline SyncNet reel
+```
+
+### Mode commande local
+
+Pour tester sans separer le microservice, on peut aussi utiliser :
 
 ```text
 SYNCNET_COMMAND=python backend/tools/syncnet_pipeline_adapter.py --video {video}

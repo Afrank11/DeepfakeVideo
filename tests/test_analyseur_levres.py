@@ -87,6 +87,34 @@ def test_analyser_detaille_conserve_les_mesures_syncnet_json(tmp_path):
     assert resultat["confidence"] == 6.584
 
 
+def test_analyser_utilise_api_syncnet_configuree(tmp_path, monkeypatch):
+    chemin_video = tmp_path / "exemple.mp4"
+    chemin_video.write_bytes(b"video provisoire")
+
+    def simuler_api(self, donnees_syncnet):
+        return {
+            "score_suspicion": 58.5,
+            "mode": "syncnet_api_test",
+            "offset": -2,
+            "confidence": 7.1,
+            "service": "syncnet-api",
+            "message": "Score fourni par l API SyncNet de test.",
+        }
+
+    monkeypatch.setattr(AnalyseurLevres, "_executer_api_syncnet", simuler_api)
+    analyseur = AnalyseurLevres(
+        url_api_syncnet="http://syncnet.test/api/v1/syncnet/analyser-levres",
+        charger_env_local=False,
+    )
+
+    resultat = analyseur.analyser_detaille(str(chemin_video))
+
+    assert resultat["score"] == 58.5
+    assert resultat["methode"] == "syncnet_api"
+    assert resultat["mode"] == "syncnet_api_test"
+    assert resultat["service"] == "syncnet-api"
+
+
 def test_normaliser_score_garde_intervalle_0_100():
     analyseur = AnalyseurLevres(charger_env_local=False)
 

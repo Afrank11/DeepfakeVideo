@@ -16,7 +16,7 @@ API Gateway FastAPI
 ServiceDeepfake
         |
         +--> AnalyseurClignements (MediaPipe)
-        +--> AnalyseurLevres (SyncNet ou placeholder)
+        +--> AnalyseurLevres -> API SyncNet
         +--> CalculateurScore
         |
         v
@@ -35,6 +35,18 @@ Lancer l'API FastAPI depuis la racine du projet :
 
 ```bash
 uvicorn backend.app.main:app --reload
+```
+
+Pour utiliser SyncNet en mode API, lancer aussi le microservice SyncNet :
+
+```bash
+uvicorn backend.syncnet_api.main:app --reload --port 8010
+```
+
+Puis configurer le backend principal avec :
+
+```text
+SYNCNET_API_URL=http://127.0.0.1:8010/api/v1/syncnet/analyser-levres
 ```
 
 Ou depuis le dossier `backend` :
@@ -75,13 +87,18 @@ GET  /
 GET  /api/v1/health
 GET  /api/v1/architecture
 POST /api/v1/deepfake/analyser-video
+
+Microservice SyncNet :
+
+GET  /health
+POST /api/v1/syncnet/analyser-levres
 ```
 
 ## Organisation du travail
 
 - API Gateway & Architecture : routes, structure microservice, documentation.
 - Moteur detection yeux : MediaPipe et calcul des clignements.
-- Synchro labiale : module provisoire, puis SyncNet ou alternative.
+- Synchro labiale : API SyncNet ou fallback local.
 - Tableau de bord : interface utilisateur et affichage du score.
 
 ## Documentation
@@ -89,3 +106,5 @@ POST /api/v1/deepfake/analyser-video
 - `docs/architecture.md` : description de l'architecture globale.
 - `docs/api_gateway.md` : role de l'API Gateway.
 - `docs/moteur_yeux.md` : fonctionnement du moteur de clignements.
+- `docs/synchronisation_labiale.md` : configuration SyncNet API/commande.
+- `docs/guide_tests_equipe.md` : guide de test et prompts Codex pour l'equipe.

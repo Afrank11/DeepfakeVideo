@@ -19,9 +19,13 @@ class AnalyseurLevres:
     def __init__(
         self,
         commande_syncnet: list[str] | None = None,
+        url_api_syncnet: str | None = None,
+        cle_api_syncnet: str | None = None,
         charger_env_local: bool = True,
     ):
         self.charger_env_local = charger_env_local
+        self.url_api_syncnet = url_api_syncnet or self._lire_configuration("SYNCNET_API_URL")
+        self.cle_api_syncnet = cle_api_syncnet or self._lire_configuration("SYNCNET_API_KEY")
         self.commande_syncnet = commande_syncnet or self._lire_commande_syncnet()
 
     def analyser(self, chemin_video: str) -> float:
@@ -38,6 +42,11 @@ class AnalyseurLevres:
             }
 
         donnees_syncnet = self._preparer_entrees_syncnet(chemin_video)
+        resultat_api = self._calculer_score_syncnet_api(donnees_syncnet)
+
+        if resultat_api is not None:
+            return resultat_api
+
         resultat_syncnet = self._calculer_score_syncnet(donnees_syncnet)
 
         if resultat_syncnet is not None:
@@ -99,17 +108,59 @@ class AnalyseurLevres:
             "message": "Score fourni par la commande SyncNet configuree.",
         }
 
+    def _calculer_score_syncnet_api(self, donnees_syncnet: dict) -> dict | None:
+        """Retourne le score donne par une API SyncNet externe/interne."""
+        if not self.url_api_syncnet:
+            return None
+
+        donnees_api = self._executer_api_syncnet(donnees_syncnet)
+        if not isinstance(donnees_api, dict):
+            return None
+
+        score_brut = self._extraire_score_depuis_donnees(donnees_api)
+        if score_brut is None:
+            return None
+
+        resultat = {
+            "score": self._normaliser_score(score_brut),
+            "methode": "syncnet_api",
+            "message": donnees_api.get(
+                "message",
+                "Score fourni par l API SyncNet configuree.",
+            ),
+        }
+
+        for cle in ("mode", "offset", "confidence", "service"):
+            if cle in donnees_api:
+                resultat[cle] = donnees_api[cle]
+
+        return resultat
+
+    def _lire_configuration(self, cle: str) -> str | None:
+        """Lit une configuration depuis l'environnement ou le fichier .env."""
+        valeur = os.getenv(cle)
+        if valeur:
+            return valeur
+
+        if self.charger_env_local and os.getenv("SYNCNET_DISABLE_ENV") != "1":
+            return self._lire_valeur_depuis_env_local(cle)
+
+        return None
+
     def _lire_commande_syncnet(self) -> list[str] | None:
         """Lit la commande SyncNet depuis la variable d'environnement."""
-        commande = os.getenv("SYNCNET_COMMANDE") or os.getenv("SYNCNET_COMMAND")
-        if self.charger_env_local and os.getenv("SYNCNET_DISABLE_ENV") != "1":
-            commande = commande or self._lire_commande_depuis_env_local()
+        commande = self._lire_configuration("SYNCNET_COMMANDE")
+        commande = commande or self._lire_configuration("SYNCNET_COMMAND")
         if not commande:
             return None
         return shlex.split(commande)
 
     def _lire_commande_depuis_env_local(self) -> str | None:
         """Lit SYNCNET_COMMAND depuis un fichier .env local si present."""
+        return self._lire_valeur_depuis_env_local("SYNCNET_COMMAND")
+
+    def _lire_valeur_depuis_env_local(self, cle_recherchee: str) -> str | None:
+        """Lit une cle precise depuis un fichier .env local si present."""
         chemins_possibles = [
             Path(".env"),
             Path(__file__).resolve().parents[3] / ".env",
@@ -126,10 +177,51 @@ class AnalyseurLevres:
                     continue
 
                 cle, valeur = ligne.split("=", 1)
-                if cle.strip() in {"SYNCNET_COMMAND", "SYNCNET_COMMANDE"}:
+                if cle.strip() == cle_recherchee:
                     return valeur.strip().strip('"').strip("'")
 
         return None
+
+    def _executer_api_syncnet(self, donnees_syncnet: dict) -> dict | None:
+        """Envoie la video a une API SyncNet et retourne sa reponse JSON."""
+        try:
+            import httpx
+        except ImportError:
+            return None
+
+        chemin_video = Path(donnees_syncnet["chemin_video"])
+        headers = {}
+
+        if self.cle_api_syncnet:
+            headers["Authorization"] = f"Bearer {self.cle_api_syncnet}"
+
+        try:
+            with chemin_video.open("rb") as fichier:
+                fichiers = {
+                    "video": (
+                        chemin_video.name,
+                        fichier,
+                        "video/mp4",
+                    )
+                }
+                reponse = httpx.post(
+                    self.url_api_syncnet,
+                    files=fichiers,
+                    headers=headers,
+                    timeout=self.TIMEOUT_SYNCNET_SECONDES,
+                )
+        except (OSError, httpx.HTTPError):
+            return None
+
+        if reponse.status_code >= 400:
+            return None
+
+        try:
+            donnees = reponse.json()
+        except json.JSONDecodeError:
+            return None
+
+        return donnees if isinstance(donnees, dict) else None
 
     def _executer_commande_syncnet(self, donnees_syncnet: dict) -> float | dict | None:
         """Execute SyncNet et extrait un score numerique de sa sortie."""

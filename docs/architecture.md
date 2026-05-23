@@ -12,8 +12,10 @@ Le module d'Abdoul concerne la couche architecture et service qui relie l'API Ga
 Dashboard
     -> API Gateway FastAPI
         -> ServiceDeepfake
-            -> AnalyseurClignements (MediaPipe plus tard)
-            -> AnalyseurLevres (SyncNet ou placeholder plus tard)
+            -> AnalyseurClignements (MediaPipe)
+            -> AnalyseurLevres
+                -> API SyncNet
+                    -> Pipeline SyncNet
             -> CalculateurScore
         -> ResultatAnalyse JSON
 ```
@@ -32,8 +34,9 @@ L'API Gateway recoit les requetes HTTP, gere les routes FastAPI et transmet la v
 
 `ServiceDeepfake` est l'orchestrateur. Il coordonne les modules suivants :
 
-- `AnalyseurClignements` : analysera les clignements des yeux avec MediaPipe.
-- `AnalyseurLevres` : analysera la synchronisation labiale avec SyncNet ou un placeholder temporaire.
+- `AnalyseurClignements` : analyse les clignements des yeux avec MediaPipe.
+- `AnalyseurLevres` : appelle une API SyncNet lorsque `SYNCNET_API_URL` est configuree, puis utilise un fallback local si l'API est absente.
+- `backend.syncnet_api` : expose le pipeline SyncNet reel sous forme de microservice FastAPI.
 - `CalculateurScore` : combinera les scores partiels pour produire le score final.
 
 Cette separation permet de modifier les analyseurs IA sans changer les routes de l'API Gateway.
@@ -58,4 +61,5 @@ Le projet garde une organisation inspiree microservices :
 - les routes restent dans la couche API ;
 - l'orchestration reste dans la couche services ;
 - les objets de reponse restent dans la couche models ;
-- les analyseurs IA peuvent evoluer comme modules independants.
+- les analyseurs IA peuvent evoluer comme modules independants ;
+- la synchronisation labiale peut etre executee comme une API separee du backend principal.
