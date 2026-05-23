@@ -103,6 +103,11 @@ SYNCNET_API_URL=http://127.0.0.1:8010/api/v1/syncnet/analyser-levres
 SYNCNET_API_KEY=
 ```
 
+Avant d'envoyer la video, le backend teste rapidement `/health` sur le
+microservice SyncNet. Si cette API n'est pas lancee, il utilise directement le
+fallback local. Cela permet de tester le dashboard rapidement meme sur les
+machines qui n'ont pas SyncNet.
+
 Le flux devient donc :
 
 ```text

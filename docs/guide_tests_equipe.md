@@ -87,6 +87,10 @@ SyncNet. Le backend fonctionnera quand meme avec :
 Ce mode est suffisant pour etudier l'architecture, tester les routes et
 comprendre le flux complet.
 
+Si `SYNCNET_API_URL` est configure mais que l'API SyncNet n'est pas lancee, le
+backend teste vite `/health`, puis bascule vers le fallback local. Il ne faut
+donc pas attendre plusieurs minutes pour un simple test sans SyncNet.
+
 ## Mode avec API SyncNet
 
 Sur la machine qui a le vrai SyncNet installe dans `C:\Tools\syncnet_python`,

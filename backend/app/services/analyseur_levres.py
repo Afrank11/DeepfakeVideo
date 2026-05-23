@@ -3,6 +3,7 @@ import os
 import shlex
 import subprocess
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 class AnalyseurLevres:
@@ -14,7 +15,9 @@ class AnalyseurLevres:
 
     SCORE_PROVISOIRE = 25.0
     SCORE_VIDEO_INTROUVABLE = 100.0
-    TIMEOUT_SYNCNET_SECONDES = 420
+    TIMEOUT_SYNCNET_API_HEALTH_SECONDES = 0.5
+    TIMEOUT_SYNCNET_API_ANALYSE_SECONDES = 420
+    TIMEOUT_SYNCNET_COMMANDE_SECONDES = 420
 
     def __init__(
         self,
@@ -24,7 +27,10 @@ class AnalyseurLevres:
         charger_env_local: bool = True,
     ):
         self.charger_env_local = charger_env_local
-        self.url_api_syncnet = url_api_syncnet or self._lire_configuration("SYNCNET_API_URL")
+        self.url_api_syncnet = self._choisir_url_api_syncnet(
+            url_api_syncnet,
+            commande_syncnet,
+        )
         self.cle_api_syncnet = cle_api_syncnet or self._lire_configuration("SYNCNET_API_KEY")
         self.commande_syncnet = commande_syncnet or self._lire_commande_syncnet()
 
@@ -147,6 +153,20 @@ class AnalyseurLevres:
 
         return None
 
+    def _choisir_url_api_syncnet(
+        self,
+        url_api_syncnet: str | None,
+        commande_syncnet: list[str] | None,
+    ) -> str | None:
+        """Donne priorite a une commande explicite pendant les tests."""
+        if url_api_syncnet:
+            return url_api_syncnet
+
+        if commande_syncnet:
+            return None
+
+        return self._lire_configuration("SYNCNET_API_URL")
+
     def _lire_commande_syncnet(self) -> list[str] | None:
         """Lit la commande SyncNet depuis la variable d'environnement."""
         commande = self._lire_configuration("SYNCNET_COMMANDE")
@@ -189,6 +209,9 @@ class AnalyseurLevres:
         except ImportError:
             return None
 
+        if not self._api_syncnet_disponible(httpx):
+            return None
+
         chemin_video = Path(donnees_syncnet["chemin_video"])
         headers = {}
 
@@ -208,7 +231,7 @@ class AnalyseurLevres:
                     self.url_api_syncnet,
                     files=fichiers,
                     headers=headers,
-                    timeout=self.TIMEOUT_SYNCNET_SECONDES,
+                    timeout=self.TIMEOUT_SYNCNET_API_ANALYSE_SECONDES,
                 )
         except (OSError, httpx.HTTPError):
             return None
@@ -223,6 +246,33 @@ class AnalyseurLevres:
 
         return donnees if isinstance(donnees, dict) else None
 
+    def _api_syncnet_disponible(self, httpx_module) -> bool:
+        """Verifie vite si le microservice SyncNet est lance avant l'upload."""
+        url_sante = self._construire_url_sante_syncnet()
+        if not url_sante:
+            return True
+
+        try:
+            reponse = httpx_module.get(
+                url_sante,
+                timeout=self.TIMEOUT_SYNCNET_API_HEALTH_SECONDES,
+            )
+        except httpx_module.HTTPError:
+            return False
+
+        return reponse.status_code < 400
+
+    def _construire_url_sante_syncnet(self) -> str | None:
+        """Construit l'URL /health depuis l'URL d'analyse SyncNet."""
+        if not self.url_api_syncnet:
+            return None
+
+        url = urlparse(self.url_api_syncnet)
+        if not url.scheme or not url.netloc:
+            return None
+
+        return f"{url.scheme}://{url.netloc}/health"
+
     def _executer_commande_syncnet(self, donnees_syncnet: dict) -> float | dict | None:
         """Execute SyncNet et extrait un score numerique de sa sortie."""
         commande = self._construire_commande_syncnet(donnees_syncnet["chemin_video"])
@@ -233,7 +283,7 @@ class AnalyseurLevres:
                 capture_output=True,
                 check=False,
                 text=True,
-                timeout=self.TIMEOUT_SYNCNET_SECONDES,
+                timeout=self.TIMEOUT_SYNCNET_COMMANDE_SECONDES,
             )
         except (OSError, subprocess.TimeoutExpired):
             return None
