@@ -3,60 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentinelle Numérique - Dashboard</title>
+    <title>Sentinelle Numerique - Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <div class="dashboard-container">
-        <header>
-            <h1>Sentinelle Numérique</h1>
+    <main class="dashboard-shell">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">Specialiste Deepfake Video</p>
+                <h1>Sentinelle Numerique</h1>
+            </div>
+            <div class="api-pill" id="api-status">API en attente</div>
         </header>
 
-        <main>
-            <!-- Section 1 : Envoi de la vidéo -->
-            <section class="upload-section">
-                <h2>Analyse de Vidéo</h2>
-                <form id="upload-form">
-                    <div class="file-input-wrapper">
-                        <input type="file" id="video-upload" accept="video/*">
-                        <label for="video-upload">Choisir une vidéo (MP4, AVI...)</label>
-                    </div>
-                    <button type="submit" id="analyze-btn">Lancer l'analyse</button>
-                    <div id="loader" class="hidden">
-                    <div class="spinner"></div>
-                        <p>Analyse des pixels en cours...</p>
-                    </div>
-                </form>
-            </section>
+        <section class="workspace">
+            <form id="upload-form" class="upload-panel">
+                <div class="panel-heading">
+                    <p class="eyebrow">Video</p>
+                    <h2>Analyse rapide</h2>
+                </div>
 
-            <!-- Section 2 : Affichage des scores (Placeholders) -->
-            <section class="results-section">
-                <h2>Résultats de l'analyse</h2>
-                <div class="results-grid">
-                    <div class="card">
-                        <h3>Score Yeux</h3>
-                        <p id="score-eyes">--</p>
+                <label class="dropzone" for="video-upload">
+                    <input type="file" id="video-upload" accept="video/*">
+                    <span class="dropzone-icon">+</span>
+                    <span id="selected-file">Choisir une video</span>
+                    <small>MP4, AVI, MOV ou autre format video</small>
+                </label>
+
+                <button type="submit" id="analyze-btn">Analyser</button>
+
+                <div class="status-list" aria-live="polite">
+                    <div class="status-item" id="status-upload">
+                        <span></span>
+                        <p>Video non envoyee</p>
                     </div>
-                    <div class="card">
-                        <h3>Score Lèvres</h3>
-                        <p id="score-lips">--</p>
+                    <div class="status-item" id="status-analysis">
+                        <span></span>
+                        <p>Analyse en attente</p>
                     </div>
-                    <div class="card highlight">
-                        <h3>Score Final</h3>
-                        <p id="score-final">--</p>
-                    </div>
-                    <div class="card">
-                        <h3>Niveau de Suspicion</h3>
-                        <p id="suspicion-level">En attente...</p>
+                    <div class="status-item" id="status-cleanup">
+                        <span></span>
+                        <p>Nettoyage non lance</p>
                     </div>
                 </div>
+            </form>
+
+            <section class="results-panel">
+                <article class="verdict-card" id="verdict-card">
+                    <p class="eyebrow">Niveau de suspicion</p>
+                    <h2 id="suspicion-level">En attente</h2>
+                    <p id="verdict-message">
+                        Lancez une analyse pour obtenir une interpretation claire du score final.
+                    </p>
+                </article>
+
+                <div class="score-grid">
+                    <article class="score-card">
+                        <div>
+                            <p class="eyebrow">Score yeux</p>
+                            <h3 id="score-eyes">--</h3>
+                        </div>
+                        <p id="eyes-detail">
+                            Mesure les clignements ou utilise un fallback video si MediaPipe est indisponible.
+                        </p>
+                    </article>
+
+                    <article class="score-card">
+                        <div>
+                            <p class="eyebrow">Score levres</p>
+                            <h3 id="score-lips">--</h3>
+                        </div>
+                        <p id="lips-detail">
+                            Prepare SyncNet et utilise une approximation temporaire si SyncNet n'est pas configure.
+                        </p>
+                    </article>
+
+                    <article class="score-card final-score">
+                        <div>
+                            <p class="eyebrow">Score final</p>
+                            <h3 id="score-final">--</h3>
+                        </div>
+                        <p id="final-detail">
+                            Combine les indices yeux et levres pour produire une decision lisible.
+                        </p>
+                    </article>
+                </div>
+
+                <article class="meta-card">
+                    <p class="eyebrow">Informations upload</p>
+                    <dl>
+                        <div>
+                            <dt>Fichier</dt>
+                            <dd id="meta-filename">--</dd>
+                        </div>
+                        <div>
+                            <dt>Taille</dt>
+                            <dd id="meta-size">--</dd>
+                        </div>
+                        <div>
+                            <dt>Statut</dt>
+                            <dd id="meta-status">En attente</dd>
+                        </div>
+                    </dl>
+                </article>
             </section>
-        </main>
-    </div>
-        <script src="script.js"></script>
-        <script>
-        lucide.createIcons();
-        </script>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
 </body>
 </html>

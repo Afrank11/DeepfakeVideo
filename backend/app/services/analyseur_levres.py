@@ -21,11 +21,28 @@ class AnalyseurLevres:
 
     def analyser(self, chemin_video: str) -> float:
         """Retourne un score de suspicion entre 0 et 100."""
+        return self.analyser_detaille(chemin_video)["score"]
+
+    def analyser_detaille(self, chemin_video: str) -> dict:
+        """Retourne le score levres avec des informations explicatives."""
         if not Path(chemin_video).is_file():
-            return self.SCORE_VIDEO_INTROUVABLE
+            return {
+                "score": self.SCORE_VIDEO_INTROUVABLE,
+                "methode": "fichier_introuvable",
+                "message": "Video introuvable: score maximal par securite.",
+            }
 
         donnees_syncnet = self._preparer_entrees_syncnet(chemin_video)
-        return self._calculer_score_syncnet(donnees_syncnet)
+        score_syncnet = self._calculer_score_syncnet(donnees_syncnet)
+
+        if score_syncnet is not None:
+            return {
+                "score": score_syncnet,
+                "methode": "syncnet_configure",
+                "message": "Score fourni par la commande SyncNet configuree.",
+            }
+
+        return self._score_provisoire_par_mouvement(chemin_video)
 
     def _preparer_entrees_syncnet(self, chemin_video: str) -> dict:
         """Prepare les donnees qui seront envoyees plus tard a SyncNet."""
@@ -46,14 +63,14 @@ class AnalyseurLevres:
         """Reserve l'emplacement de la detection future de la bouche."""
         return []
 
-    def _calculer_score_syncnet(self, donnees_syncnet: dict) -> float:
-        """Retourne le score SyncNet ou un score provisoire si non configure."""
+    def _calculer_score_syncnet(self, donnees_syncnet: dict) -> float | None:
+        """Retourne le score SyncNet ou None si SyncNet n'est pas configure."""
         if not self.commande_syncnet:
-            return self.SCORE_PROVISOIRE
+            return None
 
         score_brut = self._executer_commande_syncnet(donnees_syncnet)
         if score_brut is None:
-            return self.SCORE_PROVISOIRE
+            return None
 
         return self._normaliser_score(score_brut)
 
@@ -132,3 +149,82 @@ class AnalyseurLevres:
     def _normaliser_score(self, score_brut: float) -> float:
         """Ramene un score dans l'intervalle accepte de 0 a 100."""
         return max(0.0, min(100.0, score_brut))
+
+    def _score_provisoire_par_mouvement(self, chemin_video: str) -> dict:
+        """Fallback en attendant SyncNet.
+
+        Il utilise le mouvement visuel global comme approximation faible. Ce
+        n'est pas une vraie synchronisation labiale, mais cela donne une reponse
+        variable et explicable pour la demonstration.
+        """
+        try:
+            import cv2
+        except ImportError:
+            return {
+                "score": self.SCORE_PROVISOIRE,
+                "methode": "placeholder",
+                "message": "SyncNet et OpenCV indisponibles: score levres provisoire.",
+                "mouvement_moyen": None,
+            }
+
+        capture = cv2.VideoCapture(str(chemin_video))
+
+        if not capture.isOpened():
+            return {
+                "score": self.SCORE_PROVISOIRE,
+                "methode": "placeholder",
+                "message": "Video illisible pour le module levres: score provisoire.",
+                "mouvement_moyen": None,
+            }
+
+        precedente = None
+        mouvements = []
+        images_lues = 0
+        fps = capture.get(cv2.CAP_PROP_FPS) or 30
+        pas = max(1, int(fps // 2))
+
+        try:
+            while True:
+                succes, image = capture.read()
+
+                if not succes:
+                    break
+
+                images_lues += 1
+
+                if images_lues % pas != 0:
+                    continue
+
+                hauteur, largeur = image.shape[:2]
+                zone_bouche = image[int(hauteur * 0.55):int(hauteur * 0.9), :]
+                gris = cv2.cvtColor(zone_bouche, cv2.COLOR_BGR2GRAY)
+                gris = cv2.resize(gris, (160, 60))
+
+                if precedente is not None:
+                    difference = cv2.absdiff(gris, precedente)
+                    mouvements.append(float(difference.mean()))
+
+                precedente = gris
+        finally:
+            capture.release()
+
+        mouvement_moyen = sum(mouvements) / len(mouvements) if mouvements else 0.0
+
+        if mouvement_moyen < 1:
+            score = 68.0
+        elif mouvement_moyen < 4:
+            score = 55.0
+        elif mouvement_moyen < 12:
+            score = 42.0
+        else:
+            score = 30.0
+
+        return {
+            "score": score,
+            "methode": "placeholder_mouvement_bouche",
+            "message": (
+                "SyncNet n'est pas configure. Le score levres utilise une "
+                "approximation par mouvement dans la zone basse du visage."
+            ),
+            "mouvement_moyen": round(mouvement_moyen, 2),
+        }

@@ -67,6 +67,8 @@ async def analyser_video(video: UploadFile = File(...)) -> dict:
     extension = Path(video.filename or "video.mp4").suffix or ".mp4"
     chemin_video = dossier_temporaire / f"{uuid4().hex}{extension}"
 
+    fichier_temporaire_supprime = False
+
     try:
         chemin_video.write_bytes(contenu)
         resultat = service.analyser_video(str(chemin_video)).vers_json()
@@ -83,12 +85,30 @@ async def analyser_video(video: UploadFile = File(...)) -> dict:
     finally:
         if chemin_video.exists():
             chemin_video.unlink()
+            fichier_temporaire_supprime = True
 
-    return _ajouter_metadonnees_upload(resultat, video)
+    return _ajouter_metadonnees_upload(
+        resultat,
+        video,
+        taille_octets=len(contenu),
+        fichier_temporaire_supprime=fichier_temporaire_supprime,
+    )
 
 
-def _ajouter_metadonnees_upload(resultat: dict, video: UploadFile) -> dict:
+def _ajouter_metadonnees_upload(
+    resultat: dict,
+    video: UploadFile,
+    taille_octets: int | None = None,
+    fichier_temporaire_supprime: bool | None = None,
+) -> dict:
     resultat["filename"] = video.filename
     resultat["content_type"] = video.content_type
     resultat["score_suspicion"] = resultat.get("score_final")
+    resultat["upload"] = {
+        "recu": True,
+        "nom_original": video.filename,
+        "type_contenu": video.content_type,
+        "taille_octets": taille_octets,
+        "fichier_temporaire_supprime": fichier_temporaire_supprime,
+    }
     return resultat
